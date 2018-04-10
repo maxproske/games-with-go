@@ -1,3 +1,8 @@
+/**
+ * Games With Go EP 03.2 - Functions, Structs, Pointers
+ * https://www.youtube.com/watch?v=039Ma0MzUE4
+ */
+
 package main
 
 import "fmt"
