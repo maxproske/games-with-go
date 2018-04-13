@@ -17,11 +17,10 @@ type storyPage struct {
 
 func main() {
 	page1 := storyPage{"It was a dark and stormy night.", nil, nil} // nil is vaguely similar to null in other languages
-	page2 := storyPage{"You are alone.", nil, nil}
-	page3 := storyPage{"You see a troll ahead.", nil, nil} // will let us know when we've reached the end of the story
-	page1.nextPage = &page2
-	page2.nextPage = &page3
+	page1.addToEnd("You are alone.")
+	page1.addToEnd("You see a troll ahead.") // will let us know when we've reached the end of the story
 
+	page1.addAfter("Testing AddAfter")
 	page1.readPageLoop()
 }
 
@@ -54,3 +53,18 @@ func (page *storyPage) readPageLoop() {
 // Functions - return value
 // Procedures - no return value, just executes commands
 // Methods - functions attached to a struct/object
+
+func (page *storyPage) addToEnd(text string) {
+	// Advance until a page's nextpage is nil
+	for page.nextPage != nil {
+		page = page.nextPage
+	}
+	// We are at the end of the list
+	page.nextPage = &storyPage{text, nil, nil}
+}
+
+func (page *storyPage) addAfter(text string) {
+	// Rewrite before link to new node
+	newPage := &storyPage{text, page.nextPage, nil}
+	page.nextPage = newPage
+}
