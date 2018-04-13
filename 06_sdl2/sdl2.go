@@ -29,6 +29,15 @@ type color struct {
 }
 
 func main() {
+
+	// Added after EP06 to address macosx issues
+	err := sdl.Init(sdl.INIT_EVERYTHING)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer sdl.Quit()
+
 	// Create a window.
 	// Can return more than one (result, error type).
 	window, err := sdl.CreateWindow(
@@ -90,8 +99,16 @@ func main() {
 	renderer.Copy(tex, nil, nil) // Copy
 	renderer.Present()           // Present
 
-	// Wait a specified number of milliseconds before returning.
-	sdl.Delay(2000)
+	// Changed after EP 06 to address MacOSX
+	// OSX requires that you consume events for windows to open and work properly
+	for {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				return
+			}
+		}
+	}
 }
 
 func setPixel(x, y int, c color, pixels []byte) {
