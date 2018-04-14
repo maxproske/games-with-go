@@ -107,6 +107,8 @@ func main() {
 			case *sdl.QuitEvent:
 				return
 			}
+
+			sdl.Delay(16)
 		}
 	}
 }
