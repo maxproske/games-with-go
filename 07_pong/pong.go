@@ -66,6 +66,58 @@ func (ball *ball) draw(pixels []byte) {
 	}
 }
 
+func (ball *ball) update(leftPaddle, rightPaddle *paddle) {
+	// Update position
+	ball.x += ball.xv
+	ball.y += ball.yv
+
+	// Handle collisions with boundary
+	if int(ball.y)-ball.radius <= 0 || int(ball.y)+ball.radius > winHeight {
+		ball.yv = -ball.yv
+	}
+	if int(ball.x) < 0 || int(ball.x) > winWidth {
+		ball.x = 300
+		ball.y = 300
+	}
+
+	// Collisiosn with ball
+	if int(ball.x) < int(leftPaddle.x)+int(leftPaddle.w/2) {
+		// Ball is at same x position as right edge of left paddle
+		if int(ball.y) > int(leftPaddle.y)-leftPaddle.h/2 && int(ball.y) < int(leftPaddle.y)+leftPaddle.h/2 {
+			// ball is lower than top of the paddle, and ball is higher than bottom of paddle
+			ball.xv = -ball.xv
+		}
+
+	}
+
+	if int(ball.x) > int(rightPaddle.x)-int(rightPaddle.w/2) {
+		if int(ball.y) > int(rightPaddle.y)-rightPaddle.h/2 && int(ball.y) < int(rightPaddle.y)+rightPaddle.h/2 {
+			ball.xv = -ball.xv
+		}
+	}
+}
+
+func (paddle *paddle) update(keyState []uint8) {
+	// Respond to input
+	if keyState[sdl.SCANCODE_UP] != 0 {
+		paddle.y -= 5
+	}
+	if keyState[sdl.SCANCODE_DOWN] != 0 {
+		paddle.y += 5
+	}
+}
+
+func clear(pixels []byte) {
+	// Goes through memory in order. So it's still fast without having to clear only unchanged pixels
+	for i := range pixels {
+		pixels[i] = 0
+	}
+}
+
+func (paddle *paddle) aiUpdate(ball *ball) {
+	paddle.y = ball.y
+}
+
 func main() {
 	// Added after EP06 to address macosx issues
 	err := sdl.Init(sdl.INIT_EVERYTHING)
@@ -121,20 +173,34 @@ func main() {
 	pixels := make([]byte, winWidth*winHeight*4) // 4 bytes for each channel (ARGB)
 
 	// Make a paddle and ball
-	player1 := paddle{pos{100, 100}, 20, 100, color{255, 255, 255}}
-	ball := ball{pos{300, 300}, 20, 0, 0, color{255, 255, 255}}
+	player1 := paddle{pos{50, 100}, 20, 100, color{255, 255, 255}}
+	player2 := paddle{pos{float32(winWidth) - 50, 100}, 20, 100, color{255, 255, 255}}
+	ball := ball{pos{300, 300}, 20, 2, 2, color{255, 255, 255}}
+
+	// Get keyboard state
+	keyState := sdl.GetKeyboardState() // pointer with representation of every key. Updated by PollEvent
 
 	// Poll for window events
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			// Type switch (Special switch. Type of sdl.PollEvent() isn't totally decided)
 			switch event.(type) {
 			case *sdl.QuitEvent:
 				return
 			}
 		}
 
-		// Draw paddle and ball
+		// Clear everything
+		clear(pixels)
+
+		// Update
+		player1.update(keyState)
+		player2.aiUpdate(&ball)
+		ball.update(&player1, &player2)
+
+		// Draw
 		player1.draw(pixels)
+		player2.draw(pixels)
 		ball.draw(pixels)
 
 		// Update SDL2 texture
