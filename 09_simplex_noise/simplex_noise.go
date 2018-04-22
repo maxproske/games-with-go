@@ -60,7 +60,7 @@ func main() {
 	pixels := make([]byte, winWidth*winHeight*4)
 
 	// Make noise
-	makeNoise()
+	makeNoise(pixels)
 
 	// Copy it to the renderer.
 	tex.Update(nil, pixels, winWidth*4)
@@ -104,17 +104,46 @@ func setPixel(x, y int, c color, pixels []byte) {
 	}
 }
 
-func makeNoise() {
+func makeNoise(pixels []byte) {
+	// Collect noise into an array
+	noise := make([]float32, winWidth*winHeight)
+
+	// Keep track of min and max as we go
+	min := float32(9990.0)
+	max := float32(-9999.0)
+
+	i := 0
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			fmt.Println(snoise2(float32(x), float32(y)))
+			//fmt.Println(snoise2(float32(x), float32(y)))
+			noise[i] = snoise2(float32(x)/100.0, float32(y)/100.0)
+			if noise[i] < min {
+				min = noise[i]
+			} else if noise[i] > max {
+				max = noise[i]
+			}
+			i++
 		}
 	}
+
+	// Call rescale/draw
+	rescaleAndDraw(noise, min, max, pixels)
 }
 
 // Rescale values we get from noise to be between 0-255
-func rescale() {
+func rescaleAndDraw(noise []float32, min, max float32, pixels []byte) {
+	// Rescale noise
+	scale := 255.0 / (max - min)
+	offset := min * scale
 
+	// Turn it into bytes
+	for i := range noise {
+		noise[i] = noise[i]*scale - offset
+		b := byte(noise[i]) // Make an integer
+		pixels[i*4] = b
+		pixels[i*4+1] = b
+		pixels[i*4+2] = b
+	}
 }
 
 /* This code ported to Go from Stefan Gustavson's C implementation, his comments follow:
