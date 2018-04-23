@@ -159,7 +159,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves, w, h
 				// Use j index
 				noise[j] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 				// Keeping track of min and max is NOT threadsafe
-				if noise[j] < min || noise[j] > max {
+				if noise[j] < min || noise[j] > max { // go run -race goroutines.go (check for reading while writing)
 					// Only Lock mutex only after condition, so every goroutine is not stuck behind a global lock
 					mutex.Lock()
 					if noise[j] < min {
