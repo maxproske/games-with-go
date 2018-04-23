@@ -144,7 +144,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int) 
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
 			//fmt.Println(snoise2(float32(x), float32(y)))
-			noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			noise[i] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 			if noise[i] < min {
 				min = noise[i]
 			} else if noise[i] > max {
@@ -235,6 +235,23 @@ func getDualGradient(c1, c2, c3, c4 color) []color {
 
 	}
 	return result
+}
+
+func turbulence(x, y, frequency, lacuarity, gain float32, octaves int) float32 {
+	var sum float32
+	amplitude := float32(1)
+	for i := 0; i < octaves; i++ {
+		f := snoise2(x*frequency, y*frequency) * amplitude // get noise
+		// Get absolute value
+		if f < 0 {
+			f = -1.0 * f
+		}
+		// Add f to the sum
+		sum += f
+		frequency *= lacuarity
+		amplitude *= gain
+	}
+	return sum
 }
 
 /* This code ported to Go from Stefan Gustavson's C implementation, his comments follow:
