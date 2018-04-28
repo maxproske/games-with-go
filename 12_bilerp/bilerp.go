@@ -26,6 +26,7 @@ type texture struct {
 	pos
 	pixels      []byte
 	w, h, pitch int // pitch is swith * size of each pixel
+	scale       float32
 }
 type pos struct {
 	x, y float32
@@ -69,7 +70,7 @@ func main() {
 	cloudNoise, min, max := noise.MakeNoise(noise.FBM, 0.009, 0.5, 3, 3, winWidth, winHeight)
 	cloudGradient := getGradient(rgba{0, 0, 255}, rgba{255, 255, 255})
 	cloudPixels := rescaleAndDraw(cloudNoise, min, max, cloudGradient, winWidth, winHeight)
-	cloudTexture := texture{pos{0, 0}, cloudPixels, winWidth, winHeight, winWidth * 4}
+	cloudTexture := texture{pos{0, 0}, cloudPixels, winWidth, winHeight, winWidth * 4, 1}
 
 	// Create a slice of pixels
 	pixels := make([]byte, winWidth*winHeight*4)
@@ -90,15 +91,12 @@ func main() {
 			}
 		}
 
-		// Clear everything
-		//clear(pixels)
-
 		// Draw background
 		cloudTexture.draw(pixels)
 
 		// Draw balloons
 		for _, tex := range balloonTextures {
-			tex.drawAlpha(pixels)
+			tex.drawBilinearScaled(tex.scale, tex.scale, pixels)
 		}
 
 		// Move balloons
@@ -121,6 +119,7 @@ func main() {
 		if elapsedTime < 5 {
 			sdl.Delay(5 - uint32(elapsedTime))
 		}
+		sdl.Delay(16)
 	}
 }
 
@@ -167,7 +166,7 @@ func loadBalloons() []texture {
 		}
 
 		// Pitch is width * 4
-		balloonTextures[i] = texture{pos{float32(i * 60), float32(i * 60)}, balloonPixels, w, h, w * 4}
+		balloonTextures[i] = texture{pos{float32(i * 60), float32(i * 60)}, balloonPixels, w, h, w * 4, float32(1 + i)}
 	}
 	return balloonTextures
 }
@@ -228,6 +227,89 @@ func (tex *texture) drawAlpha(pixels []byte) {
 			}
 		}
 	}
+}
+
+// Nearest neighbour
+func (tex *texture) drawScaled(scaleX, scaleY float32, pixels []byte) {
+	newWidth := int(float32(tex.w) * scaleX)
+	newHeight := int(float32(tex.h) * scaleY)
+	// Precompute the pitch
+	texW4 := tex.w * 4
+
+	for y := 0; y < newHeight; y++ {
+		fy := float32(y) / float32(newHeight) * float32(tex.h-1) // percentage along y axis we are on the new texture
+		fyi := int(fy)                                           // integer approximation
+		screenY := int(fy*scaleY) + int(tex.y)                   // coordinate to draw on screen
+		screenIndex := screenY*winWidth*4 + int(tex.x)*4         // index in the pixels array
+		for x := 0; x < newWidth; x++ {
+			fx := float32(x) / float32(newWidth) * float32(tex.w-1)
+			screenX := int(fx*scaleX) + int(tex.x)
+			if screenX >= 0 && screenX < winWidth && screenY >= 0 && screenY < winHeight {
+				fxi4 := int(fx) * 4
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4] // Set screen pixels red
+				screenIndex++
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4+1] // Set screen pixels green
+				screenIndex++
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4+2] // Set screen pixels blue
+				screenIndex++
+				screenIndex++ // skip alpha
+			}
+		}
+	}
+}
+
+// Bilinear interpolation. Not worthwhile to do in software.
+func (tex *texture) drawBilinearScaled(scaleX, scaleY float32, pixels []byte) {
+	newWidth := int(float32(tex.w) * scaleX)
+	newHeight := int(float32(tex.h) * scaleY)
+	// Precompute the pitch
+	texW4 := tex.w * 4
+
+	for y := 0; y < newHeight; y++ {
+		fy := float32(y) / float32(newHeight) * float32(tex.h-1) // percentage along y axis we are on the new texture
+		fyi := int(fy)                                           // integer approximation
+		ty := fy - float32(fyi)                                  // percentage between two bottom pixels
+		screenY := int(fy*scaleY) + int(tex.y)                   // coordinate to draw on screen
+		screenIndex := screenY*winWidth*4 + int(tex.x)*4         // index in the pixels array
+
+		for x := 0; x < newWidth; x++ {
+			fx := float32(x) / float32(newWidth) * float32(tex.w-1)
+			screenX := int(fx*scaleX) + int(tex.x)
+
+			if screenX >= 0 && screenX < winWidth && screenY >= 0 && screenY < winHeight {
+				fxi := int(fx)
+				// Get index, for four pixels around the one we want
+				c00i := fyi*texW4 + fxi*4     // top left
+				c10i := fyi*texW4 + (fxi+1)*4 // reverse these
+				c01i := (fyi+1)*texW4 + fxi*4 // reverse these
+				c11i := (fyi+1)*texW4 + (fxi+1)*4
+
+				tx := fx - float32(fxi) // percentage between top two pixels
+
+				for i := 0; i < 4; i++ {
+					// Get rgb, without having to repeat oruselves
+					c00 := float32(tex.pixels[c00i+i])
+					c10 := float32(tex.pixels[c10i+i]) // reverse these
+					c01 := float32(tex.pixels[c01i+i]) // reverse these
+					c11 := float32(tex.pixels[c11i+i])
+
+					pixels[screenIndex] = byte(blerp(c00, c10, c01, c11, tx, ty))
+					screenIndex++
+				}
+			}
+		}
+	}
+}
+
+// Linear interpolations on float
+func flerp(a, b, pct float32) float32 {
+	return a + (b-a)*pct
+}
+
+// Bilinear interpolation
+func blerp(c00, c10, c01, c11, tx, ty float32) float32 {
+	// lerp top row, lerp bottom row, lerp column
+	return flerp(flerp(c00, c10, tx), flerp(c01, c11, tx), ty)
 }
 
 func clear(pixels []byte) {
