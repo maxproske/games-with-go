@@ -155,7 +155,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves, w, h
 			for j := start; j < end; j++ {
 				// Get index in noise array, and backwards compute the x/y values
 				x := j % w
-				y := (j - x) / h
+				y := (j - x) / w
 				// Use j index
 				noise[j] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 				// Keeping track of min and max is NOT threadsafe

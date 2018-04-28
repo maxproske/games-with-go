@@ -42,7 +42,7 @@ func MakeNoise(noiseType NoiseType, frequency, lacunarity, gain float32, octaves
 			end := start + batchSize - 1
 			for j := start; j < end; j++ {
 				x := j % w
-				y := (j - x) / h
+				y := (j - x) / w
 
 				// Determine noise type, using branch prediction
 				if noiseType == TURBULENCE {

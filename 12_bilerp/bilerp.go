@@ -11,6 +11,7 @@ import (
 	"os"        // for loading files
 	"time"
 
+	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -64,6 +65,12 @@ func main() {
 	}
 	defer tex.Destroy()
 
+	// Make some noise
+	cloudNoise, min, max := noise.MakeNoise(noise.FBM, 0.009, 0.5, 3, 3, winWidth, winHeight)
+	cloudGradient := getGradient(rgba{0, 0, 255}, rgba{255, 255, 255})
+	cloudPixels := rescaleAndDraw(cloudNoise, min, max, cloudGradient, winWidth, winHeight)
+	cloudTexture := texture{pos{0, 0}, cloudPixels, winWidth, winHeight, winWidth * 4}
+
 	// Create a slice of pixels
 	pixels := make([]byte, winWidth*winHeight*4)
 
@@ -84,7 +91,10 @@ func main() {
 		}
 
 		// Clear everything
-		clear(pixels)
+		//clear(pixels)
+
+		// Draw background
+		cloudTexture.draw(pixels)
 
 		// Draw balloons
 		for _, tex := range balloonTextures {
@@ -225,4 +235,98 @@ func clear(pixels []byte) {
 	for i := range pixels {
 		pixels[i] = 0
 	}
+}
+
+func setPixel(x, y int, c rgba, pixels []byte) {
+	// Convert some x,y position to index of bytearray
+	index := (y*winWidth + x) * 4 // jump to row, add column
+
+	// Array index out of bounds check
+	if index < len(pixels) && index >= 0 {
+		// Set the colour
+		pixels[index] = c.r // red component
+		pixels[index+1] = c.g
+		pixels[index+2] = c.b
+	}
+}
+
+func clamp(min, max, v int) int {
+	if v < min {
+		v = min
+	} else if v > max {
+		v = max
+	}
+	return v
+}
+
+// Rescale values we get from noise to be between 0-255
+func rescaleAndDraw(noise []float32, min, max float32, gradient []rgba, w, h int) []byte {
+	result := make([]byte, w*h*4)
+
+	// Rescale noise
+	scale := 255.0 / (max - min)
+	offset := min * scale
+
+	// Turn it into bytes
+	for i := range noise {
+		noise[i] = noise[i]*scale - offset
+
+		// Take in a gradient
+		c := gradient[clamp(0, 255, int(noise[i]))]
+
+		p := i * 4 // pixel index
+		//b := byte(noise[i]) // Make an integer
+		result[p] = c.r
+		result[p+1] = c.g
+		result[p+2] = c.b
+	}
+	return result
+}
+
+// Fractional Brownian motion
+func fbm2(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
+	var sum float32
+	amplitude := float32(1.0)
+	for i := 0; i < octaves; i++ {
+		sum += noise.Snoise2(x*frequency, y*frequency) * amplitude // x * our frequency
+		frequency = frequency * lacunarity                         // frequency will change every iteration
+		amplitude = amplitude * gain                               // amplitude will change every iteration
+	}
+	return sum
+}
+
+func colorLerp(c1, c2 rgba, pct float32) rgba {
+	return rgba{lerp(c1.r, c2.r, pct), lerp(c1.g, c2.g, pct), lerp(c1.b, c2.b, pct)}
+}
+
+// Linear interpretation (lerp) between two bytes
+func lerp(b1, b2 byte, pct float32) byte {
+	return byte(float32(b1) + pct*(float32(b2)-float32(b1)))
+}
+
+func getGradient(c1, c2 rgba) []rgba {
+	result := make([]rgba, 256)
+	for i := range result {
+		// Get the current percentage
+		pct := float32(i) / float32(255)
+		result[i] = colorLerp(c1, c2, pct)
+	}
+	return result
+}
+
+// Go from color 1 to 2, then suddenly switch to 3
+func getDualGradient(c1, c2, c3, c4 rgba) []rgba {
+	result := make([]rgba, 256)
+	for i := range result {
+		// Get the current percentage
+		pct := float32(i) / float32(255)
+		// Do the same as getGradient()
+		if pct < 0.5 {
+			result[i] = colorLerp(c1, c2, pct*float32(2))
+		} else {
+			result[i] = colorLerp(c3, c4, pct*float32(1.5)-float32(0.5)) // keep between 0-1 range
+		}
+
+	}
+	return result
 }
