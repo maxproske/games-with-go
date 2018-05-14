@@ -46,15 +46,15 @@ func NewPicture() *picture {
 	p.g = GetRandomNode()
 	p.b = GetRandomNode()
 	// How big to make it
-	num := rand.Intn(20) // up to 20 nodes
+	num := rand.Intn(4) // up to 20 nodes
 	for i := 0; i < num; i++ {
 		p.r.AddRandom(GetRandomNode()) // no leaves yet
 	}
-	num = rand.Intn(20) // up to 20 nodes
+	num = rand.Intn(4) // up to 20 nodes
 	for i := 0; i < num; i++ {
 		p.g.AddRandom(GetRandomNode()) // no leaves yet
 	}
-	num = rand.Intn(20) // up to 20 nodes
+	num = rand.Intn(4) // up to 20 nodes
 	for i := 0; i < num; i++ {
 		p.b.AddRandom(GetRandomNode()) // no leaves yet
 	}
@@ -133,14 +133,14 @@ func main() {
 	var elapsedTime float32
 
 	currentMouseState := getMouseState()
-	//prevMouseState := currentMouseState
+	prevMouseState := currentMouseState
 
 	// Seed rand
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	// Create a simple abstract syntax tree
 	pic := NewPicture()
-	tex := aptToTexture(pic, 800, 600, renderer)
+	tex := aptToTexture(pic, winWidth, winHeight, renderer)
 
 	for {
 
@@ -163,6 +163,12 @@ func main() {
 			}
 		}
 
+		// Mutate and update the texture
+		if prevMouseState.leftButton && !currentMouseState.leftButton {
+			pic.Mutate()
+			tex = aptToTexture(pic, winWidth, winHeight, renderer)
+		}
+
 		// Turn a tree into a texture
 
 		// Copy background
@@ -178,7 +184,7 @@ func main() {
 			elapsedTime = float32(time.Since(frameStart).Seconds() * 1000)
 		}
 
-		//prevMouseState = currentMouseState
+		prevMouseState = currentMouseState
 	}
 }
 

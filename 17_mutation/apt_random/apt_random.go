@@ -432,5 +432,5 @@ func GetNthNode(node Node, n, count int) (Node, int) {
 			return result, count
 		}
 	}
-	panic("Tried to pass a tree larger than the nth node") // We never found the nth node
+	return nil, count // We never found the nth node for this step in the iteration
 }
