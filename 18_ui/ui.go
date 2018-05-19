@@ -10,12 +10,13 @@ import (
 	"time"
 
 	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/18_gui/apt"
+	. "github.com/PrawnSkunk/games-with-go/18_ui/apt"
+	. "github.com/PrawnSkunk/games-with-go/18_ui/gui"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 
 var winWidth, winHeight int = 600, 600
-var rows, cols, numPics int = 3, 3, rows * cols
+var rows, cols, numPics int = 2, 2, rows * cols
 
 type pixelResult struct {
 	pixels []byte
@@ -24,12 +25,6 @@ type pixelResult struct {
 
 type rgba struct {
 	r, g, b byte
-}
-
-type mouseState struct {
-	leftButton  bool
-	rightButton bool
-	x, y        int
 }
 
 type audioState struct {
@@ -138,9 +133,6 @@ func main() {
 
 	var elapsedTime float32
 
-	//currentMouseState := getMouseState()
-	//prevMouseState := currentMouseState
-
 	// Seed rand
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -157,8 +149,8 @@ func main() {
 	pixelsChannel := make(chan pixelResult, numPics) // have room up to numPics
 
 	// Get textures (slower)
-	textures := make([]*sdl.Texture, numPics)
-	for i := range textures {
+	buttons := make([]*ImageButton, numPics)
+	for i := range picTrees {
 		// Pass in an integer, so each go routine hs its own copy of i
 		go func(i int) {
 			pixels := aptToPixels(picTrees[i], picWidth, picHeight, renderer)
@@ -167,12 +159,14 @@ func main() {
 	}
 
 	keyboardState := sdl.GetKeyboardState()
+	mouseState := GetMouseState()
 
 	for {
 
 		frameStart := time.Now()
 
-		//currentMouseState = getMouseState()
+		// Update mouse state every frame
+		mouseState.Update()
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch e := event.(type) {
@@ -180,23 +174,14 @@ func main() {
 				return
 			case *sdl.TouchFingerEvent:
 				if e.Type == sdl.FINGERDOWN {
-					// touchX := int(e.X * float32(winWidth))
-					// touchY := int(e.Y * float32(winHeight))
-					// currentMouseState.x = touchX
-					// currentMouseState.y = touchY
-					// currentMouseState.leftButton = true
+					touchX := int(e.X * float32(winWidth))
+					touchY := int(e.Y * float32(winHeight))
+					mouseState.X = touchX
+					mouseState.Y = touchY
+					mouseState.LeftButton = true
 				}
 			}
 		}
-
-		/*
-
-			// Mutate and update the texture
-			if prevMouseState.leftButton && !currentMouseState.leftButton {
-				pic.Mutate()
-				tex = aptToTexture(pic, winWidth, winHeight, renderer)
-			}
-		*/
 
 		// End the program using esc
 		if keyboardState[sdl.SCANCODE_ESCAPE] != 0 {
@@ -210,7 +195,18 @@ func main() {
 			if ok {
 				// Fill texture array
 				tex := pixelsToTexture(renderer, pixelsAndIndex.pixels, picWidth, picHeight)
-				textures[pixelsAndIndex.index] = tex
+				xi := pixelsAndIndex.index % cols
+				yi := (pixelsAndIndex.index - xi) / cols
+				x := int32(xi * picWidth) // Figure out where to draw it
+				y := int32(yi * picHeight)
+				xPad := int32(float32(winWidth) * 0.1 / float32(cols+1))
+				yPad := int32(float32(winHeight) * 0.1 / float32(rows+1))
+				x += xPad * (int32(xi) + 1)
+				y += yPad * (int32(yi) + 1)
+				rect := sdl.Rect{x, y, int32(picWidth), int32(picHeight)}
+				// Make image button
+				button := NewImageButton(renderer, tex, rect, sdl.Color{255, 255, 255, 0})
+				buttons[pixelsAndIndex.index] = button
 			}
 		default:
 			// Default means nothing to do
@@ -220,19 +216,14 @@ func main() {
 
 		// Copy background
 		// renderer.Copy(cloudTexture, nil, nil) // nil = draw entire source to entire destination
-		for i, tex := range textures {
+		for _, button := range buttons {
 			// Tex will be nil until we get it out of channel
-			if tex != nil {
-				xi := i % cols
-				yi := (i - xi) / cols
-				x := int32(xi * picWidth) // Figure out where to draw it
-				y := int32(yi * picHeight)
-				xPad := int32(float32(winWidth) * 0.1 / float32(cols+1))
-				yPad := int32(float32(winHeight) * 0.1 / float32(rows+1))
-				x += xPad * (int32(xi) + 1)
-				y += yPad * (int32(yi) + 1)
-				rect := &sdl.Rect{x, y, int32(picWidth), int32(picHeight)}
-				renderer.Copy(tex, nil, rect) // Draw at that rectangle
+			if button != nil {
+				button.Update(mouseState) // Update it
+				if button.WasLeftClicked {
+					button.IsSelected = !button.IsSelected
+				}
+				button.Draw(renderer) // Draw it
 			}
 		}
 
@@ -244,8 +235,6 @@ func main() {
 			sdl.Delay(5 - uint32(elapsedTime))
 			elapsedTime = float32(time.Since(frameStart).Seconds() * 1000)
 		}
-
-		//prevMouseState = currentMouseState
 	}
 }
 
@@ -276,19 +265,6 @@ func pixelsToTexture(renderer *sdl.Renderer, pixels []byte, w, h int) *sdl.Textu
 	}
 	tex.Update(nil, pixels, w*4) // Can't provide a rectangle, pitch = 4 bytes per pixel
 	return tex
-}
-
-func getMouseState() mouseState {
-	mouseX, mouseY, mouseButtonState := sdl.GetMouseState()
-	// Extract data from bitmask
-	leftButton := mouseButtonState & sdl.ButtonLMask()  // 1
-	rightButton := mouseButtonState & sdl.ButtonRMask() // 4
-	var result mouseState
-	result.x = int(mouseX)
-	result.y = int(mouseY)
-	result.leftButton = !(leftButton == 0)
-	result.rightButton = !(rightButton == 0)
-	return result
 }
 
 // Return pixela rray not *sdl.Texture, because renderer can only be changed on the main thread
