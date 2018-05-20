@@ -426,6 +426,13 @@ func (op *OpNoise) String() string {
 func CopyTree(node Node, parent Node) Node {
 	// We can use reflection to ask the type of a struct
 	copy := reflect.New(reflect.ValueOf(node).Elem().Type()).Interface().(Node) // Eg. Make a new node that is an OpPlus. Wrap back up in a node interface. Cast interface as node
+
+	// All constants will be 0, so they won't be all black
+	switch n := node.(type) {
+	case *OpConstant:
+		copy.(*OpConstant).value = n.value
+	}
+
 	// Blank node. No values (parents and children) not filled in.
 	copy.SetParent(parent)
 	copyChildren := make([]Node, len(node.GetChildren())) // Same size as children we are copying

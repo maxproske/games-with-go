@@ -10,8 +10,8 @@ import (
 	"time"
 
 	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/19_reflection/apt"
-	. "github.com/PrawnSkunk/games-with-go/19_reflection/gui"
+	. "github.com/PrawnSkunk/games-with-go/19_crossover/apt"
+	. "github.com/PrawnSkunk/games-with-go/19_crossover/gui"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 
