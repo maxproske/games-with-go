@@ -23,6 +23,11 @@ type pixelResult struct {
 	index  int
 }
 
+type guiState struct {
+	zoom      bool
+	zoomImage *sdl.Texture
+}
+
 type rgba struct {
 	r, g, b byte
 }
@@ -234,6 +239,7 @@ func main() {
 
 	keyboardState := sdl.GetKeyboardState()
 	mouseState := GetMouseState()
+	state := guiState{false, nil} // Not zoomed in
 
 	for {
 
@@ -262,72 +268,87 @@ func main() {
 			return
 		}
 
-		// Get stuff out of the channel as soon as it's available
-		// Is there anything in it?
-		select {
-		case pixelsAndIndex, ok := <-pixelsChannel: // Get a texture and an OK (or not) out of a channel
-			if ok {
-				// Fill texture array
-				tex := pixelsToTexture(renderer, pixelsAndIndex.pixels, picWidth*2, picHeight*2)
-				xi := pixelsAndIndex.index % cols
-				yi := (pixelsAndIndex.index - xi) / cols
-				x := int32(xi * picWidth) // Figure out where to draw it
-				y := int32(yi * picHeight)
-				xPad := int32(float32(winWidth) * 0.1 / float32(cols+1))
-				yPad := int32(float32(winHeight) * 0.1 / float32(rows+1))
-				x += xPad * (int32(xi) + 1)
-				y += yPad * (int32(yi) + 1)
-				rect := sdl.Rect{x, y, int32(picWidth), int32(picHeight)}
-				// Make image button
-				button := NewImageButton(renderer, tex, rect, sdl.Color{255, 255, 255, 0})
-				buttons[pixelsAndIndex.index] = button
-			}
-		default:
-			// Default means nothing to do
-		}
+		// Only render button if in non-zoom state
+		if !state.zoom {
 
-		renderer.Clear()
-
-		// Copy background
-		// renderer.Copy(cloudTexture, nil, nil) // nil = draw entire source to entire destination
-		for _, button := range buttons {
-			// Tex will be nil until we get it out of channel
-			if button != nil {
-				button.Update(mouseState) // Update it
-				if button.WasLeftClicked {
-					button.IsSelected = !button.IsSelected
+			// Get stuff out of the channel as soon as it's available
+			// Is there anything in it?
+			select {
+			case pixelsAndIndex, ok := <-pixelsChannel: // Get a texture and an OK (or not) out of a channel
+				if ok {
+					// Fill texture array
+					tex := pixelsToTexture(renderer, pixelsAndIndex.pixels, picWidth*2, picHeight*2)
+					xi := pixelsAndIndex.index % cols
+					yi := (pixelsAndIndex.index - xi) / cols
+					x := int32(xi * picWidth) // Figure out where to draw it
+					y := int32(yi * picHeight)
+					xPad := int32(float32(winWidth) * 0.1 / float32(cols+1))
+					yPad := int32(float32(winHeight) * 0.1 / float32(rows+1))
+					x += xPad * (int32(xi) + 1)
+					y += yPad * (int32(yi) + 1)
+					rect := sdl.Rect{x, y, int32(picWidth), int32(picHeight)}
+					// Make image button
+					button := NewImageButton(renderer, tex, rect, sdl.Color{255, 255, 255, 0})
+					buttons[pixelsAndIndex.index] = button
 				}
-				button.Draw(renderer) // Draw it
+			default:
+				// Default means nothing to do
 			}
-		}
 
-		// Draw and update evolve button
-		evolveButton.Update(mouseState)
-		if evolveButton.WasLeftClicked {
-			// Build up a list of all the images user has selected
-			selectedPictures := make([]*picture, 0)
+			renderer.Clear()
+
+			// Copy background
+			// renderer.Copy(cloudTexture, nil, nil) // nil = draw entire source to entire destination
 			for i, button := range buttons {
-				if button.IsSelected {
-					selectedPictures = append(selectedPictures, picTrees[i])
+				// Tex will be nil until we get it out of channel
+				if button != nil {
+					button.Update(mouseState) // Update it
+					if button.WasLeftClicked {
+						button.IsSelected = !button.IsSelected
+					} else if button.WasRightClicked {
+						// Make a larger version
+						zoomPixels := aptToPixels(picTrees[i], winWidth*2, winHeight*2)
+						zoomTex := pixelsToTexture(renderer, zoomPixels, winWidth*2, winHeight*2)
+						state.zoomImage = zoomTex // Set zoom image
+						state.zoom = true
+					}
+					button.Draw(renderer) // Draw it
 				}
 			}
-			if len(selectedPictures) != 0 {
-				// Clear out buttons
-				for i := range buttons {
-					buttons[i] = nil
-				}
-				// Evolve. ":=" will be a new tree outside the scope, and won't do what we think
-				picTrees = evolve(selectedPictures) // Replcae original picTrees with slice we get frome evolve
-				for i := range picTrees {
-					go func(i int) {
-						pixels := aptToPixels(picTrees[i], picWidth*2, picHeight*2) // Double width and height of images to get free anti-aliasing (beacuse of rendering hint)
-						pixelsChannel <- pixelResult{pixels, i}                     //  Channel is still setup ready to use
-					}(i)
-				}
-			}
-		}
-		evolveButton.Draw(renderer)
 
+			// Draw and update evolve button
+			evolveButton.Update(mouseState)
+			if evolveButton.WasLeftClicked {
+				// Build up a list of all the images user has selected
+				selectedPictures := make([]*picture, 0)
+				for i, button := range buttons {
+					if button.IsSelected {
+						selectedPictures = append(selectedPictures, picTrees[i])
+					}
+				}
+				if len(selectedPictures) != 0 {
+					// Clear out buttons
+					for i := range buttons {
+						buttons[i] = nil
+					}
+					// Evolve. ":=" will be a new tree outside the scope, and won't do what we think
+					picTrees = evolve(selectedPictures) // Replcae original picTrees with slice we get frome evolve
+					for i := range picTrees {
+						go func(i int) {
+							pixels := aptToPixels(picTrees[i], picWidth*2, picHeight*2) // Double width and height of images to get free anti-aliasing (beacuse of rendering hint)
+							pixelsChannel <- pixelResult{pixels, i}                     //  Channel is still setup ready to use
+						}(i)
+					}
+				}
+			}
+			evolveButton.Draw(renderer)
+		} else {
+			// In zoomed in state
+			if !mouseState.RightButton && mouseState.PrevRightButton {
+				state.zoom = false
+			}
+			renderer.Copy(state.zoomImage, nil, nil)
+		}
 		renderer.Present()
 
 		elapsedTime = float32(time.Since(frameStart).Seconds() * 1000)
