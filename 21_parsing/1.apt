@@ -1,0 +1,4 @@
+( Picture
+( / ( * ( Atan2 ( * X ( Cos ( + X X ) ) ) ( / X Y ) ) ( * Y Y ) ) ( + ( + ( SimplexNoise ( / 0.401466489 -0.428621590 ) ( SimplexNoise X Y ) ) Y ) ( / ( Sin ( SimplexNoise Y X ) ) ( Cos 0.629397392 ) ) ) )
+( - ( Atan ( + ( * 0.020214677 X ) ( + X ( / -0.259618759 -0.006447256 ) ) ) ) ( / ( / Y X ) 0.103341341 ) )
+( - ( SimplexNoise ( Cos -0.575317264 ) ( * Y Y ) ) ( + ( Cos ( * -0.297038913 X ) ) ( Atan ( + Y Y ) ) ) ) )
