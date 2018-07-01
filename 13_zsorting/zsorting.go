@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/13_vec3"
+	noise "github.com/maxproske/games-with-go/10_package_noise"
+	. "github.com/maxproske/games-with-go/13_vec3"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 

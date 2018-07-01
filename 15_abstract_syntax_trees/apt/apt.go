@@ -4,7 +4,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/PrawnSkunk/games-with-go/10_package_noise"
+	"github.com/maxproske/games-with-go/10_package_noise"
 )
 
 // An interface is a contract that lets you define a set of functions

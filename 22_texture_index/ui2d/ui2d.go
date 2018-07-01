@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PrawnSkunk/games-with-go/22_texture_index/game"
+	"github.com/maxproske/games-with-go/22_texture_index/game"
 	"github.com/veandco/go-sdl2/sdl"
 )
 

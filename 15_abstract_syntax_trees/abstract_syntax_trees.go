@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	. "github.com/PrawnSkunk/games-with-go/15_abstract_syntax_trees/apt"
+	. "github.com/maxproske/games-with-go/15_abstract_syntax_trees/apt"
 )
 
 func main() {

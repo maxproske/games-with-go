@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/PrawnSkunk/games-with-go/10_package_noise"
+	"github.com/maxproske/games-with-go/10_package_noise"
 )
 
 //////////////////////

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/15_abstract_syntax_trees/apt"
+	noise "github.com/maxproske/games-with-go/10_package_noise"
+	. "github.com/maxproske/games-with-go/15_abstract_syntax_trees/apt"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 

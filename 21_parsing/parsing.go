@@ -18,9 +18,9 @@ import (
 	"strings"
 	"time"
 
-	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/21_parsing/apt"
-	. "github.com/PrawnSkunk/games-with-go/21_parsing/gui"
+	noise "github.com/maxproske/games-with-go/10_package_noise"
+	. "github.com/maxproske/games-with-go/21_parsing/apt"
+	. "github.com/maxproske/games-with-go/21_parsing/gui"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 

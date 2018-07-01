@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
+	noise "github.com/maxproske/games-with-go/10_package_noise"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 

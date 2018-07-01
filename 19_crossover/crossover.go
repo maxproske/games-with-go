@@ -9,9 +9,9 @@ import (
 	"math/rand"
 	"time"
 
-	noise "github.com/PrawnSkunk/games-with-go/10_package_noise"
-	. "github.com/PrawnSkunk/games-with-go/19_crossover/apt"
-	. "github.com/PrawnSkunk/games-with-go/19_crossover/gui"
+	noise "github.com/maxproske/games-with-go/10_package_noise"
+	. "github.com/maxproske/games-with-go/19_crossover/apt"
+	. "github.com/maxproske/games-with-go/19_crossover/gui"
 	sdl "github.com/veandco/go-sdl2/sdl"
 )
 
