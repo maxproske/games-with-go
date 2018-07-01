@@ -3,9 +3,7 @@
 Following a video series that teaches programming via a series of small game related projects.
 Start here https://www.youtube.com/watch?v=9D4yH7e_ea8.
 
-## Current progress
-
-![Current progress screenshot](https://i.imgur.com/YiHva1r.png)
+![Current progress screenshot](https://i.imgur.com/4rzAxno.png)
 
 ## Prerequisites
 

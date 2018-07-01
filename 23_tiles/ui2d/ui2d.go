@@ -153,8 +153,8 @@ func init() {
 type UI2d struct {
 }
 
-// Draw ...
-func (ui *UI2d) Draw(level *game.Level) {
+// DrawThenGetInput ...
+func (ui *UI2d) DrawThenGetInput(level *game.Level) game.Input {
 	// Random (but reproducable) tile variety
 	rand.Seed(1)
 
@@ -168,8 +168,10 @@ func (ui *UI2d) Draw(level *game.Level) {
 			}
 		}
 	}
+	// Draw player sprite (21,59) ontop of tiles
+	renderer.Copy(textureAtlas, &sdl.Rect{21 * 32, 59 * 32, 32, 32}, &sdl.Rect{int32(level.Player.X), int32(level.Player.Y), 32, 32})
 
 	// renderer.Copy(textureAtlas, nil, nil) // Draw whole texture atlas
 	renderer.Present()
-	sdl.Delay(60000)
+	return game.Input{}
 }

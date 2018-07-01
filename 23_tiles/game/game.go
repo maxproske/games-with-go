@@ -7,7 +7,15 @@ import (
 
 // GameUI provides draw function
 type GameUI interface {
-	Draw(*Level)
+	DrawThenGetInput(*Level) Input
+}
+
+// Input ...
+type Input struct {
+	up    bool
+	down  bool
+	left  bool
+	right bool
 }
 
 // Tile enum is just an alias for a rune (a character in Go)
@@ -22,11 +30,24 @@ const (
 	Door Tile = '|'
 	// Blank represented by zero
 	Blank Tile = 0
+	// Pending represented by -1
+	Pending Tile = -1
 )
+
+// Entity ...
+type Entity struct {
+	X, Y int
+}
+
+// Player ...
+type Player struct {
+	Entity
+}
 
 // Level holds the 2D array that represents the map
 type Level struct {
-	Map [][]Tile
+	Map    [][]Tile
+	Player Player
 }
 
 // loadLevelFromFile opens and prints a map
@@ -73,10 +94,36 @@ func loadLevelFromFile(filename string) *Level {
 				t = Door
 			case '.':
 				t = DirtFloor
+			case 'P':
+				level.Player.X = x * 32 // Set player X,Y
+				level.Player.Y = y * 32
+				t = Pending // Be a placeholder
 			default:
 				panic("Invalid character in map!")
 			}
 			level.Map[y][x] = t
+		}
+	}
+
+	// Go over the map again
+	for y, row := range level.Map {
+		for x, tile := range row {
+			if tile == Pending {
+			SearchLoop:
+				// Search adjacent squares for floor tile
+				for searchX := x - 1; searchX <= x+1; searchX++ {
+					for searchY := y - 1; searchY <= y+1; searchY++ {
+						searchTile := level.Map[searchY][searchX]
+						switch searchTile {
+						case DirtFloor:
+							level.Map[y][x] = DirtFloor
+							break SearchLoop // label break
+						default:
+							panic("Error in searchTile")
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -86,5 +133,8 @@ func loadLevelFromFile(filename string) *Level {
 // Run loads the level from file
 func Run(ui GameUI) {
 	level := loadLevelFromFile("game/maps/level1.map")
-	ui.Draw(level)
+	for {
+		_ = ui.DrawThenGetInput(level)
+		// TODO(max): Do something with the input
+	}
 }
