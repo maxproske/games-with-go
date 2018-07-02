@@ -5,12 +5,17 @@ Start here https://www.youtube.com/watch?v=9D4yH7e_ea8.
 
 ![Current progress screenshot](https://i.imgur.com/4rzAxno.png)
 
+## Why Go?
+
+- Garbage collection is very low latency, compared to Java or C#, which focus on throughput. Helps reduces problems with pauses during gc.
+- Compiles to native executables. Simplifies sharing games. Improved performance because it does not rely on Just-in-time compilation
+
 ## Prerequisites
 
 What things you need to install the software and how to install them.
 
-- Install golang and Visual Studio Code.
-- Install the go extension. It will generate everything else.
+- Install Go and Visual Studio Code.
+- Install the Go extension in VSCode. It will generate everything else.
 
 ## Getting Started With SDL2
 
