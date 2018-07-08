@@ -43,6 +43,12 @@ Add these as new lines to the System Path variable:
 5. Get SDL2 binding for Go
 - `$ go get -u github.com/veandco/go-sdl2/sdl`
 
+6. Download SDL2_ttf development library (MINGW 32/64-bit). https://www.libsdl.org/projects/SDL_ttf/
+- Copy the contents of `bin`, `include/SDL2` and `lib` into their respective folders at `C:\Program Files\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32`
+
+5. Get SDL2_ttf binding for Go
+- `$ go get -v github.com/veandco/go-sdl2/ttf`
+
 ## Help
 
 If you encounter exit code: 3221225781, simply restart your computer.
