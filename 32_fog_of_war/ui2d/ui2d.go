@@ -317,6 +317,12 @@ func (ui *ui) Draw(level *game.Level) {
 					}
 
 					ui.renderer.Copy(ui.textureAtlas, &srcRect, &dstRect)
+
+					if tile.OverlayRune != game.Blank {
+						// TODO(max): Support multiple door varients
+						srcRect := ui.textureIndex[tile.OverlayRune][0]
+						ui.renderer.Copy(ui.textureAtlas, &srcRect, &dstRect) //  Reuse dstrects since this is an overlay
+					}
 				}
 			}
 		}

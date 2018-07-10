@@ -55,9 +55,10 @@ type Input struct {
 
 // Tile enum is just an alias for a rune (a character in Go)
 type Tile struct {
-	Rune    rune
-	Visible bool
-	Seen    bool // Have you seen the tile before
+	Rune        rune
+	OverlayRune rune
+	Visible     bool
+	Seen        bool // Have you seen the tile before
 }
 
 const (
@@ -69,6 +70,10 @@ const (
 	ClosedDoor = '|'
 	// OpenDoor represented by a character
 	OpenDoor = '/'
+	// UpStair represented bu a character
+	UpStair = 'u'
+	// DownStair represented by a character
+	DownStair = 'd'
 	// Blank represented by zero
 	Blank = 0
 	// Pending represented by -1
@@ -263,15 +268,23 @@ func loadLevelFromFile(filename string) *Level {
 		line := levelLines[y]
 		for x, c := range line {
 			var t Tile
+			t.OverlayRune = Blank // Most things will not have an overlay rune
 			switch c {
 			case ' ', '\t', '\n', '\r':
 				t.Rune = Blank
 			case '#':
 				t.Rune = StoneWall
 			case '|':
-				t.Rune = ClosedDoor
+				t.OverlayRune = ClosedDoor
+				t.Rune = Pending
 			case '/':
 				t.Rune = OpenDoor
+			case 'u':
+				t.OverlayRune = UpStair
+				t.Rune = Pending
+			case 'd':
+				t.OverlayRune = DownStair
+				t.Rune = Pending
 			case '.':
 				t.Rune = DirtFloor
 			case '@':
@@ -298,7 +311,7 @@ func loadLevelFromFile(filename string) *Level {
 	for y, row := range level.Map {
 		for x, tile := range row {
 			if tile.Rune == Pending {
-				level.Map[y][x] = level.bfsFloor(Pos{x, y}) // Use bfs to find the nearest floor tile, and send it to it
+				level.Map[y][x].Rune = level.bfsFloor(Pos{x, y}) // Use bfs to find the nearest floor tile, and send it to it
 			}
 		}
 	}
@@ -317,7 +330,11 @@ func canWalk(level *Level, pos Pos) bool {
 		// Check tile for solid object
 		t := level.Map[pos.Y][pos.X]
 		switch t.Rune {
-		case StoneWall, ClosedDoor, Blank:
+		case StoneWall, Blank:
+			return false
+		}
+		switch t.OverlayRune {
+		case ClosedDoor:
 			return false
 		}
 		// Check to see if a monster is in the way
@@ -336,7 +353,11 @@ func canSeeThrough(level *Level, pos Pos) bool {
 		// Check tile for solid object
 		t := level.Map[pos.Y][pos.X]
 		switch t.Rune {
-		case StoneWall, ClosedDoor, Blank:
+		case StoneWall, Blank:
+			return false
+		}
+		switch t.OverlayRune {
+		case ClosedDoor:
 			return false
 		default:
 			return true
@@ -348,8 +369,8 @@ func canSeeThrough(level *Level, pos Pos) bool {
 func checkDoor(level *Level, pos Pos) {
 	// Check tile for closed door
 	t := level.Map[pos.Y][pos.X]
-	if t.Rune == ClosedDoor {
-		level.Map[pos.Y][pos.X].Rune = OpenDoor
+	if t.OverlayRune == ClosedDoor {
+		level.Map[pos.Y][pos.X].OverlayRune = OpenDoor
 		level.lineOfSight() // Check line of sight without moving a tile
 	}
 }
@@ -418,7 +439,8 @@ func (game *Game) handleInput(input *Input) {
 }
 
 // Breath-first search for a* algorithm
-func (level *Level) bfsFloor(start Pos) Tile {
+// Return just the rune so the overlay is not overwritten
+func (level *Level) bfsFloor(start Pos) rune {
 	frontier := make([]Pos, 0, 8)      // Start at 8 instead of growing/shrinking frontier
 	frontier = append(frontier, start) // Put in front of queue
 	visited := make(map[Pos]bool)
@@ -431,7 +453,7 @@ func (level *Level) bfsFloor(start Pos) Tile {
 		currentTile := level.Map[current.Y][current.X]
 		switch currentTile.Rune {
 		case DirtFloor:
-			return Tile{DirtFloor, false, false}
+			return DirtFloor
 		default:
 		}
 
@@ -444,8 +466,7 @@ func (level *Level) bfsFloor(start Pos) Tile {
 			}
 		}
 	}
-
-	return Tile{DirtFloor, false, false}
+	return DirtFloor
 }
 
 // Return slice of positions that are adjacent
