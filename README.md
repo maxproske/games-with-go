@@ -40,14 +40,13 @@ Add these as new lines to the System Path variable:
 - For SDL2: > `C:\Program Files\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\bin`
 - For GCC: > `C:\Program Files\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\bin`
 
-5. Get SDL2 binding for Go
-- `$ go get -u github.com/veandco/go-sdl2/sdl`
-
-6. Download SDL2_ttf development library (MINGW 32/64-bit). https://www.libsdl.org/projects/SDL_ttf/
+5. Download SDL2_ttf and SDL2_mixer development libraries (MINGW 32/64-bit). 
+- https://www.libsdl.org/projects/SDL_ttf/
+- https://www.libsdl.org/projects/SDL_mixer/
 - Copy the contents of `bin`, `include/SDL2` and `lib` into their respective folders at `C:\Program Files\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32`
 
-5. Get SDL2_ttf binding for Go
-- `$ go get -v github.com/veandco/go-sdl2/ttf`
+6. Get SDL2 bindings for Go
+- `$ go get -v github.com/veandco/go-sdl2/{sdl,mix,ttf}`
 
 ## Help
 
